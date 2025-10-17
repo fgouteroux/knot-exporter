@@ -26,18 +26,24 @@ jobs:
       run: |
         go mod download
         go mod verify
+        go mod tidy
 
-    - name: Check build
-      run: go build -v ./...
+    - name: Build
+      run: make build
       
     - name: Test
-      run: go test -v ./...
+      run: make test
       
     - name: Vet
-      run: go vet ./...
+      run: make vet
 
-    - name: Run golangci-lint
+    - name: Lint
       uses: golangci/golangci-lint-action@v3
       with:
         version: latest
         args: --timeout=5m
+
+    - name: Security
+      uses: securego/gosec@master
+      with:
+        args: ./...

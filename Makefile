@@ -9,13 +9,10 @@ GO_VERSION ?= $(shell go version | awk '{print $3}')
 # Go build flags
 LDFLAGS = -X main.version=$(VERSION) \
           -X main.buildTime=$(BUILD_TIME) \
-          -X main.gitCommit=$(GIT_COMMIT) \
-          -X main.goVersion=$(GO_VERSION)
+          -X main.gitCommit=$(GIT_COMMIT)
 
 # Build flags for CGO
 CGO_ENABLED = 1
-CGO_CFLAGS = -std=c99
-CGO_LDFLAGS = -L/usr/lib64 -lknot
 
 # Default target
 .PHONY: all
@@ -25,8 +22,6 @@ all: build
 .PHONY: build
 build:
 	CGO_ENABLED=$(CGO_ENABLED) \
-	CGO_CFLAGS="$(CGO_CFLAGS)" \
-	CGO_LDFLAGS="$(CGO_LDFLAGS)" \
 	go build -ldflags "$(LDFLAGS)" -o knot-exporter .
 
 # Build with race detector
@@ -87,6 +82,11 @@ lint:
 vet:
 	go vet ./...
 
+# Security code
+.PHONY: security
+security:
+	gosec -exclude-dir _local -quiet ./...
+
 # Check dependencies
 .PHONY: check-deps
 check-deps:
@@ -135,3 +135,16 @@ help:
 	@echo "  version     - Show version information"
 	@echo "  dev         - Build development version with debug symbols"
 	@echo "  help        - Show this help"
+
+# GoReleaser targets
+.PHONY: release-snapshot
+release-snapshot:
+	goreleaser release --snapshot --rm-dist
+
+.PHONY: release-check
+release-check:
+	goreleaser check
+
+.PHONY: release
+release:
+	goreleaser release --clean
