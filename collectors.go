@@ -113,18 +113,26 @@ func memoryUsage() map[string]uint64 {
 
 func getProcessMemory(pid int) uint64 {
 	statusFile := fmt.Sprintf("/proc/%d/status", pid)
-	cmd := exec.Command("grep", "VmRSS", statusFile)
-	output, err := cmd.Output()
+	content, err := os.ReadFile(statusFile)
 	if err != nil {
 		return 0
 	}
 
-	fields := strings.Fields(string(output))
-	if len(fields) >= 2 {
-		if kb, err := strconv.ParseUint(fields[1], 10, 64); err == nil {
-			return kb * 1024
+	// Search for VmRSS line in the content
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "VmRSS:") {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				if kb, err := strconv.ParseUint(fields[1], 10, 64); err == nil {
+					return kb * 1024
+				}
+			}
+			break
 		}
 	}
+
 	return 0
 }
 
