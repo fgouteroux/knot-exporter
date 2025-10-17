@@ -202,7 +202,16 @@ func (k *Ctl) Close() {
 // SetTimeout sets the timeout for control operations
 func (k *Ctl) SetTimeout(timeout int) {
 	if k.ctl != nil {
-		C.knot_ctl_set_timeout_wrapper(k.ctl, C.int(timeout))
+		// Cast safely to C.int with bounds checking
+		var cTimeout C.int
+		if timeout > 0 && timeout <= 2147483647 { // Max value for int32/C.int
+			cTimeout = C.int(timeout)
+		} else if timeout <= 0 {
+			cTimeout = 0 // Provide a safe default for negative values
+		} else {
+			cTimeout = 2147483647 // Use maximum allowed value if input is too large
+		}
+		C.knot_ctl_set_timeout_wrapper(k.ctl, cTimeout)
 	}
 }
 

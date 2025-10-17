@@ -37,26 +37,42 @@ func parseDurationString(durationStr string) (float64, bool) {
 
 	// Days
 	if matches[3] != "" {
-		days, _ := strconv.ParseFloat(matches[3], 64)
-		totalSeconds += days * 86400 // 86400 seconds in a day
+		days, err := strconv.ParseFloat(matches[3], 64)
+		if err != nil {
+			log.Printf("Warning: failed to parse days value '%s': %v", matches[3], err)
+		} else {
+			totalSeconds += days * 86400 // 86400 seconds in a day
+		}
 	}
 
 	// Hours
 	if matches[5] != "" {
-		hours, _ := strconv.ParseFloat(matches[5], 64)
-		totalSeconds += hours * 3600 // 3600 seconds in an hour
+		hours, err := strconv.ParseFloat(matches[5], 64)
+		if err != nil {
+			log.Printf("Warning: failed to parse hours value '%s': %v", matches[5], err)
+		} else {
+			totalSeconds += hours * 3600 // 3600 seconds in an hour
+		}
 	}
 
 	// Minutes
 	if matches[7] != "" {
-		minutes, _ := strconv.ParseFloat(matches[7], 64)
-		totalSeconds += minutes * 60 // 60 seconds in a minute
+		minutes, err := strconv.ParseFloat(matches[7], 64)
+		if err != nil {
+			log.Printf("Warning: failed to parse minutes value '%s': %v", matches[7], err)
+		} else {
+			totalSeconds += minutes * 60 // 60 seconds in a minute
+		}
 	}
 
 	// Seconds
 	if matches[9] != "" {
-		seconds, _ := strconv.ParseFloat(matches[9], 64)
-		totalSeconds += seconds
+		seconds, err := strconv.ParseFloat(matches[9], 64)
+		if err != nil {
+			log.Printf("Warning: failed to parse seconds value '%s': %v", matches[9], err)
+		} else {
+			totalSeconds += seconds
+		}
 	}
 
 	// Apply the sign

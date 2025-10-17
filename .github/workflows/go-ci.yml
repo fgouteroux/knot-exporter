@@ -1,6 +1,15 @@
 name: Go CI
 
-on: push
+on:
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
 
 jobs:
   build:
@@ -43,7 +52,10 @@ jobs:
         version: latest
         args: --timeout=5m
 
+    - name: Install security dependencies
+      run: |
+        sudo apt-get install -y jq
+        go install github.com/securego/gosec/v2/cmd/gosec@latest
+
     - name: Security
-      uses: securego/gosec@master
-      with:
-        args: ./...
+      run: make security

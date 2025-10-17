@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"bufio"
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -115,8 +115,12 @@ func memoryUsage() map[string]uint64 {
 }
 
 func getProcessMemory(pid int) uint64 {
-	statusFile := fmt.Sprintf("/proc/%d/status", pid)
-	content, err := os.ReadFile(statusFile)
+	// Validate pid is reasonable
+	if pid <= 0 || pid > 4194304 { // Max reasonable PID (4M)
+		return 0
+	}
+
+	content, err := os.ReadFile(fmt.Sprintf("/proc/%d/status", pid))
 	if err != nil {
 		return 0
 	}

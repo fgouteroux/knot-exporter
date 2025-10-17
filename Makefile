@@ -82,10 +82,28 @@ lint:
 vet:
 	go vet ./...
 
-# Security code
+# Directory for security-related scripts and outputs
+SECURITY_DIR := .security
+
+# Security scan with filtered gosec results
 .PHONY: security
 security:
-	gosec -exclude-dir _local -quiet ./...
+	@command -v gosec >/dev/null 2>&1 || { echo >&2 "gosec is required but not installed. Run: go install github.com/securego/gosec/v2/cmd/gosec@latest"; exit 1; }
+	@command -v jq >/dev/null 2>&1 || { echo >&2 "jq is required but not installed. Run: apt-get install jq or yum install jq"; exit 1; }
+	@mkdir -p $(SECURITY_DIR)
+	@echo "Running security scan..."
+	@gosec -quiet -fmt=json -out=$(SECURITY_DIR)/gosec-output.json ./... || true
+	@echo "Filtering results..."
+	@jq '.Issues = (.Issues | map(select((.file | contains(".cache/go-build") | not))))' \
+		$(SECURITY_DIR)/gosec-output.json > $(SECURITY_DIR)/filtered-output.json
+	@FILTERED_COUNT=$$(jq '.Issues | length' $(SECURITY_DIR)/filtered-output.json); \
+	if [ "$$FILTERED_COUNT" -gt 0 ]; then \
+		echo "Found $$FILTERED_COUNT security issues after filtering:"; \
+		jq -r '.Issues[] | "[\(.file):\(.line)] - \(.rule_id) (CWE-\(.cwe.id)): \(.details) (Confidence: \(.confidence), Severity: \(.severity))\n\(.code)"' $(SECURITY_DIR)/filtered-output.json; \
+		exit 1; \
+	else \
+		echo "No security issues found after filtering !"; \
+	fi
 
 # Check dependencies
 .PHONY: check-deps
