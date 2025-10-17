@@ -67,7 +67,9 @@ func validateConfig(sockPath string, addr string, port int) error {
 	if err != nil {
 		return fmt.Errorf("cannot bind to %s:%d: %v", addr, port, err)
 	}
-	listener.Close()
+	if err := listener.Close(); err != nil {
+		return fmt.Errorf("error closing listener: %v", err)
+	}
 
 	return nil
 }
@@ -136,7 +138,10 @@ func healthCheck(sockPath string, timeout int) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "OK")
+		_, err := fmt.Fprintf(w, "OK")
+		if err != nil {
+			log.Printf("Error writing health check response: %v", err)
+		}
 	}
 }
 
@@ -212,7 +217,7 @@ func main() {
 	mux.HandleFunc("/health", healthCheck(*knotSocketPath, *knotSocketTimeout))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, `<!DOCTYPE html>
+		_, err := fmt.Fprintf(w, `<!DOCTYPE html>
 <html>
 <head><title>Knot DNS Exporter</title></head>
 <body>
@@ -222,6 +227,9 @@ func main() {
 <p><a href="/health">Health Check</a></p>
 </body>
 </html>`, version)
+		if err != nil {
+			log.Printf("Error writing index page: %v", err)
+		}
 	})
 
 	// Create server with timeouts
