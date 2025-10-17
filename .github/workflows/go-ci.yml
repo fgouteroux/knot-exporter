@@ -1,0 +1,43 @@
+name: Go CI
+
+on: push
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23.9'
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Install libknot dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libknot-dev
+
+    - name: Get dependencies
+      run: |
+        go mod download
+        go mod verify
+
+    - name: Check build
+      run: go build -v ./...
+      
+    - name: Test
+      run: go test -v ./...
+      
+    - name: Vet
+      run: go vet ./...
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
