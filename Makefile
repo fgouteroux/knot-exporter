@@ -1,4 +1,5 @@
 # Makefile for Knot DNS Exporter
+TEST?=$$(go list ./... |grep -v 'vendor')
 
 # Build variables
 VERSION ?= $(shell git describe --tags --dirty --always 2>/dev/null || echo "dev")
@@ -43,7 +44,8 @@ build-static:
 # Test
 .PHONY: test
 test:
-	go test -v ./...
+	go test -v -timeout 60s -coverprofile=cover.out -cover $(TEST)
+	go tool cover -func=cover.out
 
 # Test with race detector
 .PHONY: test-race

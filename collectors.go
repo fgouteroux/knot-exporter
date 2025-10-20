@@ -79,6 +79,16 @@ var (
 	)
 )
 
+// KnotCtlInterface defines an interface for Knot DNS control operations
+type KnotCtlInterface interface {
+	Connect(path string) error
+	Close()
+	SetTimeout(timeout int)
+	SendCommand(cmd string) error
+	SendCommandWithType(cmd string, rtype string) error
+	ReceiveResponse() (libknot.CtlType, *libknot.CtlData, error)
+}
+
 func makeDescPair(fqName, help string, variableLabels []string, constLabels prometheus.Labels) [2]*prometheus.Desc {
 	return [2]*prometheus.Desc{
 		prometheus.NewDesc(fqName, help, variableLabels, constLabels),
@@ -419,7 +429,7 @@ func (c *KnotCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 // Helper methods for collecting different types of metrics
-func (c *KnotCollector) collectGlobalStats(ctl *libknot.Ctl, ch chan<- prometheus.Metric) error {
+func (c *KnotCollector) collectGlobalStats(ctl KnotCtlInterface, ch chan<- prometheus.Metric) error {
 	debugLog("Collecting global stats...")
 	if err := ctl.SendCommand("stats"); err != nil {
 		return err
@@ -475,7 +485,7 @@ func (c *KnotCollector) collectGlobalStats(ctl *libknot.Ctl, ch chan<- prometheu
 	return nil
 }
 
-func (c *KnotCollector) collectZoneStatusInfo(ctl *libknot.Ctl, ch chan<- prometheus.Metric) error {
+func (c *KnotCollector) collectZoneStatusInfo(ctl KnotCtlInterface, ch chan<- prometheus.Metric) error {
 	debugLog("Collecting zone status...")
 	if err := ctl.SendCommand("zone-status"); err != nil {
 		return err
@@ -554,7 +564,7 @@ func (c *KnotCollector) collectZoneStatusInfo(ctl *libknot.Ctl, ch chan<- promet
 	return nil
 }
 
-func (c *KnotCollector) collectZoneStatistics(ctl *libknot.Ctl, ch chan<- prometheus.Metric) error {
+func (c *KnotCollector) collectZoneStatistics(ctl KnotCtlInterface, ch chan<- prometheus.Metric) error {
 	debugLog("Collecting zone statistics...")
 	if err := ctl.SendCommand("zone-stats"); err != nil {
 		return err
@@ -614,7 +624,7 @@ func (c *KnotCollector) collectZoneStatistics(ctl *libknot.Ctl, ch chan<- promet
 	return nil
 }
 
-func (c *KnotCollector) collectZoneTimerInfo(ctl *libknot.Ctl, ch chan<- prometheus.Metric) error {
+func (c *KnotCollector) collectZoneTimerInfo(ctl KnotCtlInterface, ch chan<- prometheus.Metric) error {
 	debugLog("Collecting zone timers from SOA records...")
 
 	// Use zone-read with SOA type to get only SOA records
