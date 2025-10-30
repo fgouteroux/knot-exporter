@@ -1,0 +1,58 @@
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
+      arch:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libknot-dev pkg-config
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          install-only: true
+
+      - name: Run GoReleaser for ${{ inputs.arch }}
+        run: |
+          goreleaser build --single-target --snapshot --clean
+        env:
+          GOARCH: ${{ inputs.arch }}
+          GOOS: linux
+
+      - name: Create archive
+        run: |
+          cd `find ./dist -type d -name 'knot-exporter_linux_*'`
+          EXPORTER=knot-exporter_linux_${{ inputs.arch }}
+          tar czf ../"$EXPORTER".tar.gz knot-exporter ../../README.md
+          sha256sum ../"$EXPORTER".tar.gz > ../"$EXPORTER".tar.gz.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: knot-exporter-${{ inputs.arch }}
+          path: |
+            dist/knot-exporter_linux_${{ inputs.arch }}.tar.gz
+            dist/knot-exporter_linux_${{ inputs.arch }}.tar.gz.sha256
